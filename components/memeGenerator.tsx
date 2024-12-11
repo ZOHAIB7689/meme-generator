@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea"; // Import custom Textarea c
 import { Button } from "@/components/ui/button"; // Import custom Button component
 import Draggable from "react-draggable"; // Import Draggable for making text draggable
 import html2canvas from "html2canvas"; // Import html2canvas for taking screenshots
+import Image from "next/image"; // Import Next.js Image component
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Import custom Card components
-import ClipLoader from "react-spinners/ClipLoader"; // Spinner for loading states
+import ClipLoader from "react-spinners/ClipLoader";
 
 // Define the Meme type
 type Meme = {
@@ -30,7 +31,7 @@ export default function MemeGenerator() {
   // State to manage the selected meme
   const [selectedMeme, setSelectedMeme] = useState<Meme | null>(null);
   // State to manage the text input by the user
-  const [text, setText] = useState<string>("Add Your Text");
+  const [text, setText] = useState<string>("");
   // State to manage the position of the text
   const [textPosition, setTextPosition] = useState<Position>({ x: 0, y: 0 });
   // State to manage the loading state
@@ -42,25 +43,20 @@ export default function MemeGenerator() {
   // Number of memes to load at a time
   const memesPerLoad = 4;
 
-  // Fetch memes from the API
+  // useEffect to fetch memes from the API when the component mounts
   useEffect(() => {
     const fetchMemes = async () => {
       setLoading(true);
-      try {
-        const response = await fetch("https://api.imgflip.com/get_memes");
-        const data = await response.json();
-        setMemes(data.data.memes);
-        setVisibleMemes(data.data.memes.slice(0, memesPerLoad));
-      } catch (error) {
-        console.error("Failed to load memes:", error);
-        alert("Failed to load memes. Please try again later.");
-      }
+      const response = await fetch("https://api.imgflip.com/get_memes");
+      const data = await response.json();
+      setMemes(data.data.memes);
+      setVisibleMemes(data.data.memes.slice(0, memesPerLoad));
       setLoading(false);
     };
     fetchMemes();
   }, []);
 
-  // Load more memes into the carousel
+  // Function to load more memes into the carousel
   const loadMoreMemes = (): void => {
     setMoreLoading(true);
     const newVisibleMemes = memes.slice(0, visibleMemes.length + memesPerLoad);
@@ -68,7 +64,7 @@ export default function MemeGenerator() {
     setMoreLoading(false);
   };
 
-  // Download the meme as an image
+  // Function to handle downloading the meme as an image
   const handleDownload = async (): Promise<void> => {
     if (memeRef.current) {
       const canvas = await html2canvas(memeRef.current);
@@ -79,6 +75,7 @@ export default function MemeGenerator() {
     }
   };
 
+  // JSX return statement rendering the Meme Generator UI
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
       <div className="max-w-4xl w-full px-4 py-8 sm:px-6 lg:px-8">
@@ -92,12 +89,12 @@ export default function MemeGenerator() {
               Create custom memes with our easy-to-use generator.
             </p>
           </div>
-
-          {/* Meme loading or carousel */}
+          {/* Loading spinner or meme carousel */}
           {loading ? (
             <ClipLoader className="w-12 h-12 text-blue-500" />
           ) : (
             <>
+              {/* Meme carousel */}
               <div className="w-full overflow-x-scroll whitespace-nowrap py-2">
                 {visibleMemes.map((meme) => (
                   <Card
@@ -105,7 +102,7 @@ export default function MemeGenerator() {
                     className="inline-block bg-muted rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-105 mx-2"
                     onClick={() => setSelectedMeme(meme)}
                   >
-                    <img
+                    <Image
                       src={meme.url}
                       alt={meme.name}
                       width={300}
@@ -118,6 +115,7 @@ export default function MemeGenerator() {
                   </Card>
                 ))}
               </div>
+              {/* Load more memes button */}
               {visibleMemes.length < memes.length && (
                 <Button
                   onClick={loadMoreMemes}
@@ -133,7 +131,6 @@ export default function MemeGenerator() {
               )}
             </>
           )}
-
           {/* Meme customization section */}
           {selectedMeme && (
             <Card className="w-full max-w-md">
@@ -145,7 +142,7 @@ export default function MemeGenerator() {
                   ref={memeRef}
                   className="relative bg-muted rounded-lg overflow-hidden"
                 >
-                  <img
+                  <Image
                     src={selectedMeme.url}
                     alt={selectedMeme.name}
                     width={300}
@@ -153,7 +150,6 @@ export default function MemeGenerator() {
                     className="object-cover w-full h-full"
                   />
                   <Draggable
-                    bounds="parent"
                     position={textPosition}
                     onStop={(_, data) => {
                       setTextPosition({ x: data.x, y: data.y });
@@ -161,9 +157,7 @@ export default function MemeGenerator() {
                   >
                     <div
                       className="absolute text-black text-xl font-bold"
-                      style={{
-                        transform: `translate(${textPosition.x}px, ${textPosition.y}px)`,
-                      }}
+                      style={{ left: textPosition.x, top: textPosition.y }}
                     >
                       {text}
                     </div>
@@ -189,6 +183,4 @@ export default function MemeGenerator() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
+    </div>)}
